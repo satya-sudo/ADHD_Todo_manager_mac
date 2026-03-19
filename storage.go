@@ -5,21 +5,33 @@ import (
 	"os"
 )
 
-var tasks []Task
+const taskFile = "tasks.json"
 
-func loadTasks() {
+func (m *TaskManager) load() {
 
-	file, err := os.ReadFile("tasks_today.json")
+	data, err := os.ReadFile(taskFile)
+	if err != nil {
+		// file may not exist yet → fine
+		m.tasks = []Task{}
+		return
+	}
+
+	json.Unmarshal(data, &m.tasks)
+
+	// IMPORTANT: restore activeTaskID
+	for _, t := range m.tasks {
+		if t.State == Working {
+			m.activeTaskID = t.ID
+			return
+		}
+	}
+}
+func (m *TaskManager) save() {
+
+	data, err := json.MarshalIndent(m.tasks, "", " ")
 	if err != nil {
 		return
 	}
 
-	json.Unmarshal(file, &tasks)
-}
-
-func saveTasks() {
-
-	data, _ := json.MarshalIndent(tasks, "", " ")
-
-	os.WriteFile("tasks_today.json", data, 0644)
+	os.WriteFile(taskFile, data, 0644)
 }

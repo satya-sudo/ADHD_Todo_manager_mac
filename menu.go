@@ -1,119 +1,183 @@
 package main
 
-import "github.com/getlantern/systray"
+import (
+	"fmt"
 
-var taskItems []*systray.MenuItem
+	"github.com/getlantern/systray"
+)
 
 var menuItems []*systray.MenuItem
 
-func renderMenu(addTaskItem *systray.MenuItem) {
+// -------------------- CORE --------------------
 
+func clearMenu() {
 	for _, item := range menuItems {
 		item.Hide()
 	}
-
 	menuItems = []*systray.MenuItem{}
+}
 
-	renderSection("Working", Working)
+// -------------------- MAIN MENU --------------------
+
+func renderMainMenu() {
+
+	active := manager.GetActiveTask()
+
+	if active != nil {
+		systray.SetTitle("⚡ " + active.Title)
+	} else {
+		systray.SetTitle("⚡ Idle")
+	}
+
+	// -------- Current --------
+	if active != nil {
+
+		addLabel("Current")
+		addItem("⚡ " + active.Title)
+
+		addAction("⏸ Pause", func() {
+			manager.PauseTask(active.ID)
+			goToMain()
+		})
+
+		addAction("✔ Done", func() {
+			manager.CompleteTask(active.ID)
+			goToMain()
+		})
+	}
+
+	systray.AddSeparator()
+
 	renderSection("Todo", Todo)
 	renderSection("Paused", Paused)
-	renderSection("Done", Done)
+
+	systray.AddSeparator()
+
+	addAction("➕ Add Task", func() {
+		title := promptTask()
+		if title != "" {
+			manager.AddTask(title)
+			render()
+		}
+	})
+
+	systray.AddSeparator()
+
+	addAction("Quit", func() {
+		systray.Quit()
+	})
 }
+
+// -------------------- TASK SECTION --------------------
 
 func renderSection(title string, state TaskState) {
 
-	found := false
+	var filtered []Task
 
-	for _, t := range tasks {
+	for _, t := range manager.GetTasks() {
 		if t.State == state {
-			found = true
-			break
+			filtered = append(filtered, t)
 		}
 	}
 
-	if !found {
+	if len(filtered) == 0 {
 		return
 	}
 
-	header := systray.AddMenuItem(title, "")
-	header.Disable()
+	addLabel(fmt.Sprintf("%s (%d)", title, len(filtered)))
 
-	menuItems = append(menuItems, header)
+	for _, task := range filtered {
 
-	for i := range tasks {
+		t := task // capture safely
 
-		task := &tasks[i]
-
-		if task.State != state {
-			continue
-		}
-
-		item := systray.AddMenuItem(formatTitle(*task), "")
-
-		menuItems = append(menuItems, item)
-
-		go handleTaskClick(task, item)
-	}
-
-	systray.AddSeparator()
-}
-func handleTaskClick(task *Task, item *systray.MenuItem) {
-
-	for range item.ClickedCh {
-
-		switch task.State {
-
-		case Todo:
-			startWorkingTask(task.Title)
-
-		case Working:
-			pauseTask(task.Title)
-
-		case Paused:
-			startWorkingTask(task.Title)
-
-		}
-
-		renderMenu(nil)
+		addAction(formatTitle(t), func() {
+			selectTask(t.ID)
+			systray.SetTitle("⚡ " + t.Title)
+		})
 	}
 }
-func renderTasks() {
 
-	for _, item := range taskItems {
-		item.Hide()
-	}
+// -------------------- TASK ACTION MENU --------------------
 
-	taskItems = []*systray.MenuItem{}
+func renderTaskActionMenu() {
 
-	if len(tasks) == 0 {
+	task := FindTaskByID(manager.GetTasks(), selectedTaskID)
+
+	if task == nil {
+		goToMain()
 		return
 	}
 
+	addLabel(task.Title)
+
 	systray.AddSeparator()
 
-	header := systray.AddMenuItem("Today", "")
-	header.Disable()
+	switch task.State {
 
-	for i := range tasks {
+	case Todo:
 
-		task := &tasks[i]
+		addAction("▶ Start", func() {
+			manager.StartTask(task.ID)
+			goToMain()
+		})
 
-		item := systray.AddMenuItem("• "+task.Title, "task")
+	case Working:
 
-		taskItems = append(taskItems, item)
+		addAction("⏸ Pause", func() {
+			manager.PauseTask(task.ID)
+			goToMain()
+		})
 
-		go func(t *Task, menuItem *systray.MenuItem) {
+	case Paused:
 
-			for range menuItem.ClickedCh {
-
-				startWorkingTask(t.Title)
-
-			}
-
-		}(task, item)
-
+		addAction("▶ Resume", func() {
+			manager.StartTask(task.ID)
+			goToMain()
+		})
 	}
+
+	addAction("✔ Done", func() {
+		manager.CompleteTask(task.ID)
+		goToMain()
+	})
+
+	addAction("🗑 Delete", func() {
+		manager.DeleteTask(task.ID)
+		goToMain()
+	})
+
+	systray.AddSeparator()
+
+	addAction("← Back", func() {
+		goToMain()
+	})
 }
+
+// -------------------- HELPERS --------------------
+
+func addLabel(title string) {
+	item := systray.AddMenuItem(title, "")
+	item.Disable()
+	menuItems = append(menuItems, item)
+}
+
+func addItem(title string) {
+	item := systray.AddMenuItem(title, "")
+	menuItems = append(menuItems, item)
+}
+
+func addAction(title string, action func()) {
+
+	item := systray.AddMenuItem(title, "")
+	menuItems = append(menuItems, item)
+
+	go func() {
+		<-item.ClickedCh
+		action()
+	}()
+}
+
+// -------------------- FORMAT --------------------
 
 func formatTitle(t Task) string {
 

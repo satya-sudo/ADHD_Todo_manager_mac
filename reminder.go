@@ -2,30 +2,29 @@ package main
 
 import (
 	"os/exec"
-	"time"
 )
 
-func startReminder() {
-
-	go func() {
-
-		for {
-
-			time.Sleep(2 * time.Hour)
-
-			active := getActiveTask()
-
-			if active != "" {
-
-				notify(active)
-
-			}
-
-		}
-
-	}()
-
-}
+//func startReminder() {
+//
+//	go func() {
+//
+//		for {
+//
+//			time.Sleep(2 * time.Hour)
+//
+//			active := getActiveTask()
+//
+//			if active != "" {
+//
+//				notify(active)
+//
+//			}
+//
+//		}
+//
+//	}()
+//
+//}
 
 func notify(task string) {
 

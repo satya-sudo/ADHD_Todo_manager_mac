@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type TaskState string
 
@@ -12,106 +16,63 @@ const (
 )
 
 type Task struct {
+	ID        string    `json:"id"`
 	Title     string    `json:"title"`
 	State     TaskState `json:"state"`
 	CreatedAt int64     `json:"created_at"`
 }
 
-func addTask(title string) {
-
-	if title == "" {
-		return
-	}
-
-	tasks = append(tasks, Task{
+func NewTask(title string) Task {
+	return Task{
+		ID:        uuid.NewString(),
 		Title:     title,
 		State:     Todo,
 		CreatedAt: time.Now().Unix(),
-	})
-
-	saveTasks()
+	}
 }
 
-func startWorkingTask(title string) {
+func FindTaskByID(tasks []Task, id string) *Task {
 
 	for i := range tasks {
-
-		if tasks[i].Title == title {
-
-			tasks[i].State = Working
-			startFocusTimer(tasks[i].Title)
-
-		} else if tasks[i].State == Working {
-
-			tasks[i].State = Paused
-
+		if tasks[i].ID == id {
+			return &tasks[i]
 		}
-
 	}
-
-	saveTasks()
+	return nil
 }
 
-func pauseTask(title string) {
+func GetActiveTask(tasks []Task) *Task {
 
 	for i := range tasks {
-
-		if tasks[i].Title == title {
-
-			tasks[i].State = Paused
-
+		if tasks[i].State == Working {
+			return &tasks[i]
 		}
-
 	}
-
-	saveTasks()
+	return nil
 }
 
-func markTaskDone(title string) {
+func FilterTasksByState(tasks []Task, state TaskState) []Task {
 
-	for i := range tasks {
-
-		if tasks[i].Title == title {
-
-			tasks[i].State = Done
-
-		}
-
-	}
-
-	saveTasks()
-}
-
-func getActiveTask() string {
+	var result []Task
 
 	for _, t := range tasks {
-
-		if t.State == Working {
-
-			return t.Title
-
+		if t.State == state {
+			result = append(result, t)
 		}
-
 	}
 
-	return ""
-
+	return result
 }
-func setTaskState(title string, state TaskState) {
 
-	for i := range tasks {
+func RemoveTaskByID(tasks []Task, id string) []Task {
 
-		if tasks[i].Title == title {
+	var result []Task
 
-			tasks[i].State = state
-
-			if state == Working {
-				startFocusTimer(title)
-			}
-
+	for _, t := range tasks {
+		if t.ID != id {
+			result = append(result, t)
 		}
-
 	}
 
-	saveTasks()
+	return result
 }

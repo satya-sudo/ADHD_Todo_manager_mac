@@ -4,65 +4,37 @@ import (
 	"github.com/getlantern/systray"
 )
 
-var addTaskItem *systray.MenuItem
-var quitItem *systray.MenuItem
+var manager = &TaskManager{}
 
 func onReady() {
 
+	// Initial title
 	systray.SetTitle("⚡")
 
-	// menu items
-	addTaskItem = systray.AddMenuItem("➕ Add Task", "Add new task")
-	systray.AddSeparator()
+	// Load tasks via manager
+	manager.load()
 
-	quitItem = systray.AddMenuItem("Quit", "Quit")
+	// Cleanup expired tasks
+	manager.cleanupOldTasks()
 
-	// load existing tasks
-	loadTasks()
-	active := getActiveTask()
-	if active != "" {
-		startFocusTimer(active)
+	// Resume active task timer if exists
+	active := manager.GetActiveTask()
+	if active != nil {
+		manager.startTimer(active.Title)
 	}
-	// remove expired tasks
-	cleanupOldTasks()
 
-	// render menu
-	renderMenu(addTaskItem)
+	// First render
+	render()
 
-	// background services
-	startReminder()
-	startCleanupLoop()
-
-	go menuEventLoop()
+	// Background services
+	//startReminder()
+	manager.startCleanupLoop()
 }
 
-func menuEventLoop() {
-
-	for {
-
-		select {
-
-		case <-addTaskItem.ClickedCh:
-
-			title := promptTask()
-
-			if title != "" {
-
-				addTask(title)
-				renderMenu(addTaskItem)
-
-			}
-
-		case <-quitItem.ClickedCh:
-
-			systray.Quit()
-			return
-		}
-	}
+func onExit() {
+	// optional cleanup later
 }
 
 func main() {
-
-	systray.Run(onReady, nil)
-
+	systray.Run(onReady, onExit)
 }
