@@ -1,6 +1,8 @@
 package app
 
 import (
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -12,8 +14,6 @@ import (
 
 	"github.com/getlantern/systray"
 )
-
-const storagePath = "tasks.json"
 
 type App struct {
 	manager        *task.Manager
@@ -27,11 +27,13 @@ type App struct {
 func New() *App {
 	logx.Infof("creating app instance")
 	instance := &App{}
+	storagePath := defaultStoragePath()
 	manager := task.NewManager(storagePath, systray.SetTitle, instance.touchActivity)
 	renderer := ui.New(manager, instance.touchActivity)
 	instance.manager = manager
 	instance.renderer = renderer
 	instance.reminderEngine = reminder.New(instance, systray.SetTitle, notifier.New())
+	logx.Infof("using storage path=%s", storagePath)
 
 	return instance
 }
@@ -111,4 +113,18 @@ func (a *App) touchActivity() {
 
 	a.lastActivity = time.Now()
 	logx.Infof("activity touched at=%s", a.lastActivity.Format(time.RFC3339))
+}
+
+func defaultStoragePath() string {
+	if path := os.Getenv("FOCUSBAR_TASKS_PATH"); path != "" {
+		return path
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		logx.Errorf("user home lookup failed err=%v", err)
+		return "tasks.json"
+	}
+
+	return filepath.Join(home, "Library", "Application Support", "Focusbar", "tasks.json")
 }
