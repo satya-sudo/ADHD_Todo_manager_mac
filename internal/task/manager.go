@@ -1,6 +1,10 @@
 package task
 
-import "focusbar/internal/timer"
+import (
+	"sync"
+
+	"focusbar/internal/timer"
+)
 
 type Manager struct {
 	tasks        []Task
@@ -8,12 +12,15 @@ type Manager struct {
 	storagePath  string
 	timer        timer.Timer
 	setTitle     func(string)
+	touch        func()
+	mu           sync.RWMutex
 }
 
-func NewManager(storagePath string, setTitle func(string)) *Manager {
+func NewManager(storagePath string, setTitle func(string), touch func()) *Manager {
 	return &Manager{
 		storagePath: storagePath,
 		setTitle:    setTitle,
+		touch:       touch,
 	}
 }
 
@@ -22,31 +29,44 @@ func (m *Manager) AddTask(title string) {
 		return
 	}
 
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.tasks = append(m.tasks, New(title))
-	m.save()
+	m.recordActivity()
+	m.saveLocked()
 }
 
 func (m *Manager) StartTask(id string) {
 	m.timer.Stop()
 
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	var title string
 	for i := range m.tasks {
 		switch {
 		case m.tasks[i].ID == id:
 			m.tasks[i].State = Working
 			m.activeTaskID = id
+			title = m.tasks[i].Title
 		case m.tasks[i].State == Working:
 			m.tasks[i].State = Paused
 		}
 	}
 
-	if current := FindByID(m.tasks, id); current != nil {
-		m.timer.Start(current.Title, m.setTitle)
+	if title != "" {
+		m.timer.Start(title, m.setTitle)
 	}
 
-	m.save()
+	m.recordActivity()
+	m.saveLocked()
 }
 
 func (m *Manager) PauseTask(id string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	for i := range m.tasks {
 		if m.tasks[i].ID != id {
 			continue
@@ -59,10 +79,14 @@ func (m *Manager) PauseTask(id string) {
 		}
 	}
 
-	m.save()
+	m.recordActivity()
+	m.saveLocked()
 }
 
 func (m *Manager) CompleteTask(id string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	for i := range m.tasks {
 		if m.tasks[i].ID != id {
 			continue
@@ -75,10 +99,14 @@ func (m *Manager) CompleteTask(id string) {
 		}
 	}
 
-	m.save()
+	m.recordActivity()
+	m.saveLocked()
 }
 
 func (m *Manager) DeleteTask(id string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	var updated []Task
 
 	for _, current := range m.tasks {
@@ -94,19 +122,75 @@ func (m *Manager) DeleteTask(id string) {
 	}
 
 	m.tasks = updated
-	m.save()
+	m.recordActivity()
+	m.saveLocked()
 }
 
 func (m *Manager) GetTasks() []Task {
-	return m.tasks
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	tasks := make([]Task, len(m.tasks))
+	copy(tasks, m.tasks)
+	return tasks
 }
 
 func (m *Manager) GetActiveTask() *Task {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	if m.activeTaskID == "" {
 		return nil
 	}
 
-	return FindByID(m.tasks, m.activeTaskID)
+	current := FindByID(m.tasks, m.activeTaskID)
+	if current == nil {
+		return nil
+	}
+
+	copyTask := *current
+	return &copyTask
+}
+
+func (m *Manager) GetActiveTaskID() string {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	return m.activeTaskID
+}
+
+func (m *Manager) GetActiveState() State {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	if m.activeTaskID == "" {
+		return ""
+	}
+
+	current := FindByID(m.tasks, m.activeTaskID)
+	if current == nil {
+		return ""
+	}
+
+	return current.State
+}
+
+func (m *Manager) CountByState(state State) int {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	count := 0
+	for _, current := range m.tasks {
+		if current.State == state {
+			count++
+		}
+	}
+
+	return count
+}
+
+func (m *Manager) HasActiveTask() bool {
+	return m.GetActiveTaskID() != ""
 }
 
 func (m *Manager) ResumeActiveTask() {
@@ -116,4 +200,10 @@ func (m *Manager) ResumeActiveTask() {
 	}
 
 	m.timer.Start(current.Title, m.setTitle)
+}
+
+func (m *Manager) recordActivity() {
+	if m.touch != nil {
+		m.touch()
+	}
 }

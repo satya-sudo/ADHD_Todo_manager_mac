@@ -10,14 +10,16 @@ import (
 
 type Renderer struct {
 	manager        *task.Manager
+	onActivity     func()
 	currentView    view
 	selectedTaskID string
 	menuItems      []*systray.MenuItem
 }
 
-func New(manager *task.Manager) *Renderer {
+func New(manager *task.Manager, onActivity func()) *Renderer {
 	return &Renderer{
 		manager:     manager,
+		onActivity:  onActivity,
 		currentView: mainView,
 	}
 }
@@ -80,6 +82,7 @@ func (r *Renderer) renderSection(title string, state task.State) {
 	for _, current := range filtered {
 		item := current
 		r.addAction(r.formatTitle(item), func() {
+			r.recordActivity()
 			r.selectTask(item.ID)
 			systray.SetTitle("⚡ " + item.Title)
 		})
@@ -144,6 +147,7 @@ func (r *Renderer) addAction(title string, action func()) {
 
 	go func() {
 		<-item.ClickedCh
+		r.recordActivity()
 		action()
 	}()
 }
@@ -158,5 +162,11 @@ func (r *Renderer) formatTitle(current task.Task) string {
 		return "✔ " + current.Title
 	default:
 		return "• " + current.Title
+	}
+}
+
+func (r *Renderer) recordActivity() {
+	if r.onActivity != nil {
+		r.onActivity()
 	}
 }

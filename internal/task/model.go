@@ -7,6 +7,7 @@ import (
 )
 
 type State string
+type TaskState = State
 
 const (
 	Todo    State = "todo"

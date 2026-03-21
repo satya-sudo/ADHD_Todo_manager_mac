@@ -3,6 +3,9 @@ package task
 import "time"
 
 func (m *Manager) CleanupOldTasks() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	now := time.Now().Unix()
 	var fresh []Task
 
@@ -13,7 +16,7 @@ func (m *Manager) CleanupOldTasks() {
 	}
 
 	m.tasks = fresh
-	m.save()
+	m.saveLocked()
 }
 
 func (m *Manager) StartCleanupLoop() {

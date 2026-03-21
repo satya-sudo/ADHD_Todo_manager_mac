@@ -6,6 +6,9 @@ import (
 )
 
 func (m *Manager) Load() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	data, err := os.ReadFile(m.storagePath)
 	if err != nil {
 		m.tasks = []Task{}
@@ -29,6 +32,13 @@ func (m *Manager) Load() {
 }
 
 func (m *Manager) save() {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	m.saveLocked()
+}
+
+func (m *Manager) saveLocked() {
 	data, err := json.MarshalIndent(m.tasks, "", " ")
 	if err != nil {
 		return
