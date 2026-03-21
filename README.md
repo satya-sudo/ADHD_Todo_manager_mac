@@ -29,9 +29,11 @@ It is not trying to be a full project manager. It is more like a tiny focus comp
 - quick add task prompt
 - one active working task at a time
 - pause, resume, complete, and delete actions
-- task persistence in `tasks.json`
+- native macOS notifications from the bundled app
+- persistent task storage in `~/Library/Application Support/Focusbar/tasks.json`
 - automatic cleanup for old completed tasks
 - live timer in the menu bar while working on a task
+- short tray-safe titles for multi-display menu bars
 
 ## Project structure
 
@@ -42,11 +44,15 @@ focusbar/
 │       └── main.go
 ├── internal/
 │   ├── app/
+│   ├── logx/
+│   ├── notifier/
 │   ├── reminder/
 │   ├── task/
 │   ├── timer/
+│   ├── tray/
 │   └── ui/
-├── tasks.json
+├── macos/
+├── scripts/
 ├── go.mod
 └── README.md
 ```
@@ -55,51 +61,88 @@ focusbar/
 
 - `cmd/app`: application entrypoint
 - `internal/app`: startup wiring and app lifecycle
+- `internal/logx`: file logging for debugging app and notification flow
+- `internal/notifier`: native macOS notification bridge
 - `internal/task`: task model, persistence, cleanup, and task management
 - `internal/timer`: focus timer handling
+- `internal/tray`: short menu bar title formatting
 - `internal/ui`: systray rendering, menu state, and add-task prompt
-- `internal/reminder`: notification-related logic
+- `internal/reminder`: reminder evaluation and escalation logic
+- `macos`: app bundle metadata
+- `scripts`: build and run helpers for the macOS app bundle
 
 ## Requirements
 
 - macOS
 - Go 1.25+
 
-This app uses `osascript` for prompts and notifications, so it is currently macOS-specific.
+This app is macOS-specific. It uses:
 
-## Run locally
+- `osascript` for the quick add-task prompt
+- native macOS notifications through an in-process Objective-C bridge
+
+## Build And Run
 
 ```bash
-go run ./cmd/app
+./scripts/run-app-bundle.sh
 ```
 
-## Build
+That script:
+
+- builds the app bundle
+- ad-hoc signs it
+- launches `Focusbar.app`
+
+If you only want to build the bundle:
+
+```bash
+./scripts/build-app-bundle.sh
+```
+
+The generated app bundle lives at:
+
+```text
+dist/Focusbar.app
+```
+
+## Development Build
+
+If you want to compile the code without launching the app:
 
 ```bash
 go build ./...
 ```
 
-If you want a specific binary output:
+## Logs
+
+Focusbar writes logs to:
+
+```text
+~/Library/Logs/Focusbar/focusbar.log
+```
+
+Tail the log during testing:
 
 ```bash
-go build -o focusbar ./cmd/app
+tail -f ~/Library/Logs/Focusbar/focusbar.log
 ```
 
 ## How it works
 
 1. The app starts in the menu bar.
-2. Tasks are loaded from `tasks.json`.
+2. Tasks are loaded from the app support directory.
 3. If a task was already active, the timer resumes.
 4. You can add a new task from the menu.
 5. Starting one task pauses any previously active task.
 6. Completed tasks are cleaned up automatically after they get old enough.
+7. Reminders only trigger when there are pending tasks.
 
 ## Data storage
 
 Tasks are stored locally in:
 
 ```text
-tasks.json
+~/Library/Application Support/Focusbar/tasks.json
 ```
 
 Each task includes:
@@ -121,6 +164,7 @@ Each task includes:
 - recurring reminders
 - better daily review flow
 - lightweight task history
+- SQLite-backed history and sessions
 - configurable cleanup windows
 - keyboard shortcuts
 
