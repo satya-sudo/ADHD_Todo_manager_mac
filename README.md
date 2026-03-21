@@ -105,6 +105,30 @@ The generated app bundle lives at:
 dist/Focusbar.app
 ```
 
+## Install
+
+Install Focusbar into your Applications folder:
+
+```bash
+./scripts/install-app.sh
+```
+
+Create a release zip for sharing or GitHub Releases:
+
+```bash
+./scripts/package-release.sh
+```
+
+## Website
+
+A GitHub Pages landing page lives in:
+
+```text
+docs/
+```
+
+Once GitHub Pages is enabled for the repository, the Pages workflow will publish that folder automatically on pushes to `main`.
+
 ## Development Build
 
 If you want to compile the code without launching the app:

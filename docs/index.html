@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focusbar</title>
+  <meta
+    name="description"
+    content="Focusbar is an ADHD-friendly macOS menu bar todo app for quick capture, single-task focus, and gentle reminders."
+  >
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <nav class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 128 128" role="img">
+              <rect x="10" y="10" width="108" height="108" rx="26" fill="#1f1f24"></rect>
+              <path d="M73 18 42 66h18L46 104l40-49H69l23-37Z" fill="#ffc93e"></path>
+              <path d="M66 78c-2 6-3 13-3 22" stroke="#71d62a" stroke-width="6" stroke-linecap="round"></path>
+              <path d="M61 82c-10 1-19 6-24 13 10 3 22-1 29-10-1-1-3-2-5-3Z" fill="#96eb4a"></path>
+              <path d="M66 82c10 1 19 6 24 13-10 3-22-1-29-10 1-1 3-2 5-3Z" fill="#7ed63b"></path>
+            </svg>
+          </div>
+          <span>Focusbar</span>
+        </div>
+        <div class="topbar-links">
+          <a href="#features">Features</a>
+          <a href="#install">Install</a>
+          <a href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a>
+        </div>
+      </nav>
+
+      <section class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">ADHD-friendly focus for macOS</p>
+          <h1>One small task, always within reach.</h1>
+          <p class="lede">
+            Focusbar lives in your menu bar so capturing a task, resuming work, and nudging yourself back into motion
+            takes seconds instead of energy.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#install">Install Focusbar</a>
+            <a class="button secondary" href="https://github.com/" target="_blank" rel="noreferrer">View Source</a>
+          </div>
+          <ul class="hero-notes">
+            <li>Built for macOS menu bar workflows</li>
+            <li>Designed around low-friction focus</li>
+            <li>Native notifications, local storage, no cloud required</li>
+          </ul>
+        </div>
+
+        <div class="hero-card">
+          <div class="menu-preview">
+            <div class="menu-title">⚡ Pick something</div>
+            <div class="menu-body">
+              <div class="menu-section">
+                <p class="menu-label">Current</p>
+                <div class="menu-item current">⚡ Write landing page copy</div>
+                <div class="menu-action">⏸ Pause</div>
+                <div class="menu-action">✔ Done</div>
+              </div>
+              <div class="menu-divider"></div>
+              <div class="menu-section">
+                <p class="menu-label">Todo (2)</p>
+                <div class="menu-item">• Polish installer</div>
+                <div class="menu-item">• Push release build</div>
+              </div>
+              <div class="menu-divider"></div>
+              <div class="menu-action">➕ Add Task</div>
+            </div>
+          </div>
+          <div class="floating-note">
+            <span class="note-kicker">Gentle reminder</span>
+            <strong>Start one small task</strong>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    <main>
+      <section class="section" id="features">
+        <div class="section-head">
+          <p class="eyebrow">Why it feels lighter</p>
+          <h2>Built for momentum, not overhead.</h2>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <h3>Quick capture</h3>
+            <p>Add a task from the menu bar without switching into a full app or building a whole list first.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Single active task</h3>
+            <p>Focusbar keeps one task active at a time so your next step stays obvious.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Gentle reminders</h3>
+            <p>Reminders stay quiet while you are focused and only nudge when there is something pending to come back to.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Tray-safe UI</h3>
+            <p>Task names and reminder labels are trimmed specifically for the menu bar, so they stay stable across displays.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Local-first</h3>
+            <p>Your tasks stay on your Mac in Application Support. No account, sync, or online dependency required.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Native packaging</h3>
+            <p>The app is bundled and signed like a real macOS menu bar app, with native notification delivery.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section install" id="install">
+        <div class="section-head">
+          <p class="eyebrow">Install</p>
+          <h2>Build it, bundle it, run it.</h2>
+        </div>
+        <div class="install-grid">
+          <div class="install-card">
+            <h3>Fast local run</h3>
+            <pre><code>./scripts/run-app-bundle.sh</code></pre>
+            <p>This builds the icon, bundles the app, ad-hoc signs it, and launches <code>Focusbar.app</code>.</p>
+          </div>
+          <div class="install-card">
+            <h3>Install to Applications</h3>
+            <pre><code>./scripts/install-app.sh</code></pre>
+            <p>Installs the bundled app into your Applications folder so you can launch it like a normal macOS app.</p>
+          </div>
+          <div class="install-card">
+            <h3>Create a release zip</h3>
+            <pre><code>./scripts/package-release.sh</code></pre>
+            <p>Builds a distributable zip you can attach to GitHub releases or share directly.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <p class="eyebrow">Open source workflow</p>
+          <h2>Ready for GitHub Pages and release packaging.</h2>
+        </div>
+        <div class="ops-grid">
+          <div class="ops-card">
+            <span class="ops-step">1</span>
+            <h3>Docs site</h3>
+            <p>The landing page lives in <code>docs/</code>, so it can be published straight to GitHub Pages.</p>
+          </div>
+          <div class="ops-card">
+            <span class="ops-step">2</span>
+            <h3>Bundle build</h3>
+            <p>The build scripts produce a signed macOS app bundle with icon, plist, and native notification support.</p>
+          </div>
+          <div class="ops-card">
+            <span class="ops-step">3</span>
+            <h3>Release zip</h3>
+            <p>The packaging script creates a clean archive that is ready to upload as a downloadable release.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Focusbar is a small focus companion for people who want less friction and more forward motion.</p>
+    </footer>
+  </div>
+</body>
+</html>
