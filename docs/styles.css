@@ -301,6 +301,30 @@ pre {
   gap: 18px;
 }
 
+.alpha-banner {
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid rgba(240, 140, 0, 0.18);
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255, 240, 198, 0.88) 0%, rgba(255, 230, 156, 0.72) 100%);
+  box-shadow: 0 12px 30px rgba(160, 104, 12, 0.08);
+}
+
+.alpha-label {
+  margin: 0 0 8px;
+  color: var(--accent-deep);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.alpha-copy {
+  margin: 0;
+  color: #5f4814;
+  line-height: 1.7;
+}
+
 .feature-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
