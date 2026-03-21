@@ -1,0 +1,12 @@
+.DS_Store
+*.log
+
+# Local app data
+tasks.json
+
+# Build output
+dist/
+native/bin/
+
+# IDE files
+.idea/workspace.xml

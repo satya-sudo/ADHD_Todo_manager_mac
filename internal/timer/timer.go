@@ -3,6 +3,8 @@ package timer
 import (
 	"fmt"
 	"time"
+
+	"focusbar/internal/tray"
 )
 
 type Timer struct {
@@ -29,7 +31,8 @@ func (t *Timer) Start(title string, update func(string)) {
 				hours := int(elapsed.Hours())
 				minutes := int(elapsed.Minutes()) % 60
 				seconds := int(elapsed.Seconds()) % 60
-				update(fmt.Sprintf("⚡ %02d:%02d:%02d %s", hours, minutes, seconds, title))
+				timerText := fmt.Sprintf("⚡ %02d:%02d:%02d", hours, minutes, seconds)
+				update(tray.TimerTitle(timerText, title))
 			}
 		}
 	}(t.stop)

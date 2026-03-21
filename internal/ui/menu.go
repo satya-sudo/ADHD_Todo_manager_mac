@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"focusbar/internal/task"
+	"focusbar/internal/tray"
 
 	"github.com/getlantern/systray"
 )
@@ -35,9 +36,9 @@ func (r *Renderer) clearMenu() {
 func (r *Renderer) renderMainMenu() {
 	active := r.manager.GetActiveTask()
 	if active != nil {
-		systray.SetTitle("⚡ " + active.Title)
+		systray.SetTitle(tray.TaskTitle(active.Title))
 	} else {
-		systray.SetTitle("⚡ Idle")
+		systray.SetTitle(tray.IdleTitle())
 	}
 
 	if active != nil {
@@ -84,7 +85,7 @@ func (r *Renderer) renderSection(title string, state task.State) {
 		r.addAction(r.formatTitle(item), func() {
 			r.recordActivity()
 			r.selectTask(item.ID)
-			systray.SetTitle("⚡ " + item.Title)
+			systray.SetTitle(tray.TaskTitle(item.Title))
 		})
 	}
 }
