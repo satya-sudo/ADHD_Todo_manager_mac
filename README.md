@@ -119,6 +119,12 @@ Create a release zip for sharing or GitHub Releases:
 ./scripts/package-release.sh
 ```
 
+Create a drag-and-drop DMG installer:
+
+```bash
+./scripts/package-dmg.sh
+```
+
 ## Website
 
 A GitHub Pages landing page lives in:
