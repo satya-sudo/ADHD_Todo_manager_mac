@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"slices"
 
 	"focusbar/internal/task"
 	"focusbar/internal/tray"
@@ -57,6 +58,7 @@ func (r *Renderer) renderMainMenu() {
 	systray.AddSeparator()
 	r.renderSection("Todo", task.Todo)
 	r.renderSection("Paused", task.Paused)
+	r.renderDoneSection()
 
 	systray.AddSeparator()
 	r.addAction("➕ Add Task", func() {
@@ -87,6 +89,31 @@ func (r *Renderer) renderSection(title string, state task.State) {
 			r.selectTask(item.ID)
 			systray.SetTitle(tray.TaskTitle(item.Title))
 		})
+	}
+}
+
+func (r *Renderer) renderDoneSection() {
+	doneTasks := task.FilterByState(r.manager.GetTasks(), task.Done)
+	if len(doneTasks) == 0 {
+		return
+	}
+
+	slices.Reverse(doneTasks)
+	const maxVisibleDone = 5
+
+	r.addLabel(fmt.Sprintf("Done (%d)", len(doneTasks)))
+
+	visible := doneTasks
+	if len(visible) > maxVisibleDone {
+		visible = visible[:maxVisibleDone]
+	}
+
+	for _, current := range visible {
+		r.addItem("✔ " + current.Title)
+	}
+
+	if len(doneTasks) > maxVisibleDone {
+		r.addItem(fmt.Sprintf("… and %d more", len(doneTasks)-maxVisibleDone))
 	}
 }
 
