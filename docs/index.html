@@ -35,7 +35,7 @@
         <div class="topbar-links">
           <a href="#features">Features</a>
           <a href="#install">Install</a>
-          <a href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://github.com/satya-sudo/ADHD_Todo_manager_mac" target="_blank" rel="noreferrer">GitHub</a>
         </div>
       </nav>
 
@@ -49,7 +49,7 @@
           </p>
           <div class="hero-actions">
             <a class="button primary" href="#install">Install Focusbar</a>
-            <a class="button secondary" href="https://github.com/" target="_blank" rel="noreferrer">View Source</a>
+            <a class="button secondary" href="https://github.com/satya-sudo/ADHD_Todo_manager_mac" target="_blank" rel="noreferrer">View Source</a>
           </div>
           <ul class="hero-notes">
             <li>Built for macOS menu bar workflows</li>
@@ -148,6 +148,16 @@
             <pre><code>./scripts/package-release.sh</code></pre>
             <p>Builds a distributable zip you can attach to GitHub releases or share directly.</p>
           </div>
+          <div class="install-card">
+            <h3>Create a DMG installer</h3>
+            <pre><code>./scripts/package-dmg.sh</code></pre>
+            <p>Builds a drag-and-drop macOS DMG installer with <code>Focusbar.app</code> and an Applications shortcut.</p>
+          </div>
+          <div class="install-card">
+            <h3>Download from GitHub</h3>
+            <pre><code>Releases → latest</code></pre>
+            <p>Download the latest packaged zip or DMG from <a href="https://github.com/satya-sudo/ADHD_Todo_manager_mac/releases" target="_blank" rel="noreferrer">GitHub Releases</a>.</p>
+          </div>
         </div>
       </section>
 
@@ -169,8 +179,8 @@
           </div>
           <div class="ops-card">
             <span class="ops-step">3</span>
-            <h3>Release zip</h3>
-            <p>The packaging script creates a clean archive that is ready to upload as a downloadable release.</p>
+            <h3>Release artifacts</h3>
+            <p>GitHub Actions can run tests, build the app, and publish zip and DMG artifacts for tagged releases.</p>
           </div>
         </div>
       </section>

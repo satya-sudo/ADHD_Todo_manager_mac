@@ -135,6 +135,26 @@ docs/
 
 Once GitHub Pages is enabled for the repository, the Pages workflow will publish that folder automatically on pushes to `main`.
 
+Live repo:
+
+```text
+https://github.com/satya-sudo/ADHD_Todo_manager_mac
+```
+
+Releases:
+
+```text
+https://github.com/satya-sudo/ADHD_Todo_manager_mac/releases
+```
+
+## GitHub Actions
+
+This repo uses separate workflows for:
+
+- CI: test code, build Go packages, and build the signed app bundle
+- Release Artifacts: run tests, build the app, and package zip + DMG artifacts for releases
+- Deploy Pages: publish the `docs/` site to GitHub Pages
+
 ## Development Build
 
 If you want to compile the code without launching the app:
