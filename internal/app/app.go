@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"focusbar/internal/adaptive"
 	"focusbar/internal/logx"
 	"focusbar/internal/notifier"
 	"focusbar/internal/reminder"
@@ -19,8 +20,10 @@ type App struct {
 	manager        *task.Manager
 	renderer       *ui.Renderer
 	reminderEngine *reminder.Engine
+	adaptiveStats  *adaptive.Stats
 	lastActivity   time.Time
 	lastNotice     time.Time
+	pendingNotice  bool
 	mu             sync.RWMutex
 }
 
@@ -28,7 +31,8 @@ func New() *App {
 	logx.Infof("creating app instance")
 	instance := &App{}
 	storagePath := defaultStoragePath()
-	manager := task.NewManager(storagePath, systray.SetTitle, instance.touchActivity)
+	instance.adaptiveStats = adaptive.NewStats(12)
+	manager := task.NewManager(storagePath, systray.SetTitle, instance.touchActivity, instance.RecordTaskEngagement)
 	renderer := ui.New(manager, instance.touchActivity)
 	instance.manager = manager
 	instance.renderer = renderer
@@ -103,7 +107,13 @@ func (a *App) RecordNotification() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
+	if a.pendingNotice {
+		a.adaptiveStats.Record(false)
+		logx.Infof("adaptive notification missed response_rate=%.2f", a.adaptiveStats.ResponseRate())
+	}
+
 	a.lastNotice = time.Now()
+	a.pendingNotice = true
 	logx.Infof("notification recorded at=%s", a.lastNotice.Format(time.RFC3339))
 }
 
@@ -113,6 +123,27 @@ func (a *App) touchActivity() {
 
 	a.lastActivity = time.Now()
 	logx.Infof("activity touched at=%s", a.lastActivity.Format(time.RFC3339))
+}
+
+func (a *App) RecordTaskEngagement() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if !a.pendingNotice {
+		return
+	}
+
+	success := time.Since(a.lastNotice) <= 3*time.Minute
+	a.adaptiveStats.Record(success)
+	a.pendingNotice = false
+	logx.Infof("adaptive engagement recorded success=%t response_rate=%.2f", success, a.adaptiveStats.ResponseRate())
+}
+
+func (a *App) ResponseRate() float64 {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	return a.adaptiveStats.ResponseRate()
 }
 
 func defaultStoragePath() string {

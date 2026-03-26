@@ -14,8 +14,9 @@ type Snapshot struct {
 	ActiveTaskID string
 	ActiveState  task.TaskState
 
-	TodoCount   int
-	PausedCount int
+	TodoCount    int
+	PausedCount  int
+	ResponseRate float64
 
 	LastActivity     time.Time
 	LastNotification time.Time
@@ -49,6 +50,7 @@ type Provider interface {
 	LastNotification() time.Time
 	RecordNotification()
 	HasActiveTask() bool
+	ResponseRate() float64
 }
 
 type Engine struct {
@@ -102,10 +104,11 @@ func (e *Engine) tick() {
 
 	snapshot := e.buildSnapshot()
 	logx.Infof(
-		"reminder tick idle=%s todo=%d paused=%d last_activity=%s last_notification=%s",
+		"reminder tick idle=%s todo=%d paused=%d response_rate=%.2f last_activity=%s last_notification=%s",
 		snapshot.IdleDuration,
 		snapshot.TodoCount,
 		snapshot.PausedCount,
+		snapshot.ResponseRate,
 		snapshot.LastActivity.Format(time.RFC3339),
 		snapshot.LastNotification.Format(time.RFC3339),
 	)
@@ -134,6 +137,7 @@ func (e *Engine) buildSnapshot() Snapshot {
 		ActiveState:      e.provider.GetActiveState(),
 		TodoCount:        e.provider.CountTodo(),
 		PausedCount:      e.provider.CountPaused(),
+		ResponseRate:     e.provider.ResponseRate(),
 		LastActivity:     lastActivity,
 		LastNotification: e.provider.LastNotification(),
 		IdleDuration:     idleDuration,
@@ -200,23 +204,72 @@ func none() Decision {
 }
 
 func idleDecision(s Snapshot) Decision {
-	if s.IdleDuration > 2*time.Minute && canNotify(s) {
+	message := idleMessage(s.ResponseRate)
+	if shouldEscalateIdle(s) && canNotify(s, s.ResponseRate) {
 		return Decision{
 			Type:     Idle,
 			TrayText: tray.NudgeTitle(),
-			Message:  "⚡ You've been idle - start one small task",
+			Message:  message,
 			Priority: 3,
 			Notify:   true,
 		}
 	}
 
-	if s.IdleDuration > 1*time.Minute {
-		return Decision{
-			Type:     Idle,
-			TrayText: tray.NudgeTitle(),
-			Message:  "👀 Still waiting - pick something small",
-			Priority: 3,
+	return Decision{
+		Type:     Idle,
+		TrayText: tray.NudgeTitle(),
+		Message:  message,
+		Priority: 3,
+	}
+}
+
+func shouldEscalateIdle(s Snapshot) bool {
+	if s.ResponseRate < 0.3 {
+		return s.IdleDuration > 15*time.Minute
+	}
+
+	if s.ResponseRate > 0.7 {
+		return s.IdleDuration > 10*time.Minute
+	}
+
+	return s.IdleDuration > 12*time.Minute
+}
+
+func canNotify(s Snapshot, responseRate float64) bool {
+	if s.LastNotification.IsZero() {
+		return true
+	}
+
+	sinceNotification := s.Now.Sub(s.LastNotification)
+
+	if responseRate < 0.3 {
+		return sinceNotification > 20*time.Minute
+	}
+
+	if responseRate > 0.7 {
+		return sinceNotification > 10*time.Minute
+	}
+
+	return sinceNotification > 15*time.Minute
+}
+
+func idleMessage(responseRate float64) string {
+	if responseRate < 0.3 {
+		messages := []string{
+			"🌱 No rush - start small when ready",
+			"👀 It is okay, just begin with one thing",
 		}
+
+		return messages[rand.Intn(len(messages))]
+	}
+
+	if responseRate > 0.7 {
+		messages := []string{
+			"⚡ Let us go - pick one thing",
+			"🔥 You have got this - start now",
+		}
+
+		return messages[rand.Intn(len(messages))]
 	}
 
 	messages := []string{
@@ -225,20 +278,7 @@ func idleDecision(s Snapshot) Decision {
 		"🌱 Start small",
 	}
 
-	return Decision{
-		Type:     Idle,
-		TrayText: tray.NudgeTitle(),
-		Message:  messages[rand.Intn(len(messages))],
-		Priority: 3,
-	}
-}
-
-func canNotify(s Snapshot) bool {
-	if s.LastNotification.IsZero() {
-		return true
-	}
-
-	return s.Now.Sub(s.LastNotification) > 2*time.Minute
+	return messages[rand.Intn(len(messages))]
 }
 
 func pausedDecision() Decision {
