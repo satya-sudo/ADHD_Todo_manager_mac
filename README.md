@@ -30,7 +30,7 @@ It is not trying to be a full project manager. It is more like a tiny focus comp
 - one active working task at a time
 - pause, resume, complete, and delete actions
 - native macOS notifications from the bundled app
-- persistent task storage in `~/Library/Application Support/Focusbar/tasks.json`
+- persistent task storage in `~/Library/Application Support/Focusbar/focusbar.db`
 - automatic cleanup for old completed tasks
 - live timer in the menu bar while working on a task
 - short tray-safe titles for multi-display menu bars
@@ -192,7 +192,7 @@ tail -f ~/Library/Logs/Focusbar/focusbar.log
 Tasks are stored locally in:
 
 ```text
-~/Library/Application Support/Focusbar/tasks.json
+~/Library/Application Support/Focusbar/focusbar.db
 ```
 
 Each task includes:

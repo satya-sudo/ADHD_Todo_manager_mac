@@ -1,6 +1,7 @@
 package task
 
 import (
+	"database/sql"
 	"sync"
 
 	"focusbar/internal/timer"
@@ -9,7 +10,9 @@ import (
 type Manager struct {
 	tasks        []Task
 	activeTaskID string
-	storagePath  string
+	dbPath       string
+	legacyPath   string
+	db           *sql.DB
 	timer        timer.Timer
 	setTitle     func(string)
 	touch        func()
@@ -17,12 +20,13 @@ type Manager struct {
 	mu           sync.RWMutex
 }
 
-func NewManager(storagePath string, setTitle func(string), touch func(), onFocus func()) *Manager {
+func NewManager(dbPath string, legacyPath string, setTitle func(string), touch func(), onFocus func()) *Manager {
 	return &Manager{
-		storagePath: storagePath,
-		setTitle:    setTitle,
-		touch:       touch,
-		onFocus:     onFocus,
+		dbPath:     dbPath,
+		legacyPath: legacyPath,
+		setTitle:   setTitle,
+		touch:      touch,
+		onFocus:    onFocus,
 	}
 }
 
@@ -218,4 +222,17 @@ func (m *Manager) recordFocus() {
 	if m.onFocus != nil {
 		m.onFocus()
 	}
+}
+
+func (m *Manager) Close() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.db == nil {
+		return nil
+	}
+
+	err := m.db.Close()
+	m.db = nil
+	return err
 }

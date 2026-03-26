@@ -3,7 +3,6 @@
 package notifier
 
 /*
-#cgo CFLAGS: -x objective-c -fobjc-arc
 #cgo LDFLAGS: -framework Foundation -framework UserNotifications
 #include <stdlib.h>
 

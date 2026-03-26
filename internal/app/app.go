@@ -30,14 +30,14 @@ type App struct {
 func New() *App {
 	logx.Infof("creating app instance")
 	instance := &App{}
-	storagePath := defaultStoragePath()
+	dbPath, legacyPath := defaultStoragePaths()
 	instance.adaptiveStats = adaptive.NewStats(12)
-	manager := task.NewManager(storagePath, systray.SetTitle, instance.touchActivity, instance.RecordTaskEngagement)
+	manager := task.NewManager(dbPath, legacyPath, systray.SetTitle, instance.touchActivity, instance.RecordTaskEngagement)
 	renderer := ui.New(manager, instance.touchActivity)
 	instance.manager = manager
 	instance.renderer = renderer
 	instance.reminderEngine = reminder.New(instance, systray.SetTitle, notifier.New())
-	logx.Infof("using storage path=%s", storagePath)
+	logx.Infof("using database path=%s legacy_json=%s", dbPath, legacyPath)
 
 	return instance
 }
@@ -59,6 +59,9 @@ func (a *App) OnExit() {
 	logx.Infof("app exiting")
 	if a.reminderEngine != nil {
 		a.reminderEngine.Stop()
+	}
+	if err := a.manager.Close(); err != nil {
+		logx.Errorf("task manager close failed err=%v", err)
 	}
 }
 
@@ -160,16 +163,37 @@ func (a *App) IsWeakFocusHour(now time.Time) bool {
 	return a.adaptiveStats.IsWeakHour(now)
 }
 
-func defaultStoragePath() string {
+func defaultStoragePaths() (string, string) {
+	if path := os.Getenv("FOCUSBAR_DB_PATH"); path != "" {
+		legacy := os.Getenv("FOCUSBAR_TASKS_PATH")
+		if legacy == "" {
+			legacy = filepath.Join(filepath.Dir(path), "tasks.json")
+		}
+		return path, legacy
+	}
+
 	if path := os.Getenv("FOCUSBAR_TASKS_PATH"); path != "" {
-		return path
+		if filepath.Ext(path) == ".db" {
+			return path, filepath.Join(filepath.Dir(path), "tasks.json")
+		}
+		return jsonPathToDBPath(path), path
 	}
 
 	home, err := os.UserHomeDir()
 	if err != nil {
 		logx.Errorf("user home lookup failed err=%v", err)
-		return "tasks.json"
+		return "focusbar.db", "tasks.json"
 	}
 
-	return filepath.Join(home, "Library", "Application Support", "Focusbar", "tasks.json")
+	baseDir := filepath.Join(home, "Library", "Application Support", "Focusbar")
+	return filepath.Join(baseDir, "focusbar.db"), filepath.Join(baseDir, "tasks.json")
+}
+
+func jsonPathToDBPath(path string) string {
+	ext := filepath.Ext(path)
+	if ext == ".json" {
+		return path[:len(path)-len(ext)] + ".db"
+	}
+
+	return path + ".db"
 }
