@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"time"
 
+	"focusbar/internal/adaptive"
 	"focusbar/internal/logx"
 	"focusbar/internal/notifier"
 	"focusbar/internal/task"
@@ -17,6 +18,9 @@ type Snapshot struct {
 	TodoCount    int
 	PausedCount  int
 	ResponseRate float64
+	Bucket       adaptive.TimeBucket
+	BestHour     bool
+	WeakHour     bool
 
 	LastActivity     time.Time
 	LastNotification time.Time
@@ -50,7 +54,9 @@ type Provider interface {
 	LastNotification() time.Time
 	RecordNotification()
 	HasActiveTask() bool
-	ResponseRate() float64
+	ResponseRate(now time.Time) float64
+	IsBestFocusHour(now time.Time) bool
+	IsWeakFocusHour(now time.Time) bool
 }
 
 type Engine struct {
@@ -104,11 +110,13 @@ func (e *Engine) tick() {
 
 	snapshot := e.buildSnapshot()
 	logx.Infof(
-		"reminder tick idle=%s todo=%d paused=%d response_rate=%.2f last_activity=%s last_notification=%s",
+		"reminder tick idle=%s todo=%d paused=%d response_rate=%.2f best_hour=%t weak_hour=%t last_activity=%s last_notification=%s",
 		snapshot.IdleDuration,
 		snapshot.TodoCount,
 		snapshot.PausedCount,
 		snapshot.ResponseRate,
+		snapshot.BestHour,
+		snapshot.WeakHour,
 		snapshot.LastActivity.Format(time.RFC3339),
 		snapshot.LastNotification.Format(time.RFC3339),
 	)
@@ -137,7 +145,10 @@ func (e *Engine) buildSnapshot() Snapshot {
 		ActiveState:      e.provider.GetActiveState(),
 		TodoCount:        e.provider.CountTodo(),
 		PausedCount:      e.provider.CountPaused(),
-		ResponseRate:     e.provider.ResponseRate(),
+		ResponseRate:     e.provider.ResponseRate(now),
+		Bucket:           adaptive.GetTimeBucket(now),
+		BestHour:         e.provider.IsBestFocusHour(now),
+		WeakHour:         e.provider.IsWeakFocusHour(now),
 		LastActivity:     lastActivity,
 		LastNotification: e.provider.LastNotification(),
 		IdleDuration:     idleDuration,
@@ -146,6 +157,10 @@ func (e *Engine) buildSnapshot() Snapshot {
 }
 
 func Evaluate(s Snapshot) Decision {
+	if s.Bucket == adaptive.Night {
+		return none()
+	}
+
 	if s.ActiveState == task.Working {
 		return none()
 	}
@@ -204,7 +219,7 @@ func none() Decision {
 }
 
 func idleDecision(s Snapshot) Decision {
-	message := idleMessage(s.ResponseRate)
+	message := idleMessage(s.ResponseRate, s.Bucket)
 	if shouldEscalateIdle(s) && canNotify(s, s.ResponseRate) {
 		return Decision{
 			Type:     Idle,
@@ -224,6 +239,26 @@ func idleDecision(s Snapshot) Decision {
 }
 
 func shouldEscalateIdle(s Snapshot) bool {
+	if s.WeakHour {
+		return s.IdleDuration > 18*time.Minute
+	}
+
+	if s.BestHour {
+		return s.IdleDuration > 7*time.Minute
+	}
+
+	if s.Bucket == adaptive.Morning && s.ResponseRate < 0.3 {
+		return s.IdleDuration > 18*time.Minute
+	}
+
+	if s.Bucket == adaptive.Afternoon && s.ResponseRate > 0.7 {
+		return s.IdleDuration > 8*time.Minute
+	}
+
+	if s.Bucket == adaptive.Evening {
+		return s.IdleDuration > 14*time.Minute
+	}
+
 	if s.ResponseRate < 0.3 {
 		return s.IdleDuration > 15*time.Minute
 	}
@@ -237,10 +272,34 @@ func shouldEscalateIdle(s Snapshot) bool {
 
 func canNotify(s Snapshot, responseRate float64) bool {
 	if s.LastNotification.IsZero() {
-		return true
+		return s.Bucket != adaptive.Night
+	}
+
+	if s.Bucket == adaptive.Night {
+		return false
 	}
 
 	sinceNotification := s.Now.Sub(s.LastNotification)
+
+	if s.WeakHour {
+		return sinceNotification > 22*time.Minute
+	}
+
+	if s.BestHour {
+		return sinceNotification > 7*time.Minute
+	}
+
+	if s.Bucket == adaptive.Morning && responseRate < 0.3 {
+		return sinceNotification > 25*time.Minute
+	}
+
+	if s.Bucket == adaptive.Afternoon && responseRate > 0.7 {
+		return sinceNotification > 8*time.Minute
+	}
+
+	if s.Bucket == adaptive.Evening {
+		return sinceNotification > 18*time.Minute
+	}
 
 	if responseRate < 0.3 {
 		return sinceNotification > 20*time.Minute
@@ -253,32 +312,70 @@ func canNotify(s Snapshot, responseRate float64) bool {
 	return sinceNotification > 15*time.Minute
 }
 
-func idleMessage(responseRate float64) string {
-	if responseRate < 0.3 {
+func idleMessage(responseRate float64, bucket adaptive.TimeBucket) string {
+	if bucket != adaptive.Night && responseRate > 0.7 {
+		switch bucket {
+		case adaptive.Morning:
+			messages := []string{
+				"⚡ Morning focus - pick one thing",
+				"☀️ You are rolling - start here",
+			}
+
+			return messages[rand.Intn(len(messages))]
+		case adaptive.Afternoon:
+			messages := []string{
+				"⚡ This is your window - start now",
+				"🔥 Good window - start now",
+			}
+
+			return messages[rand.Intn(len(messages))]
+		}
+	}
+
+	if bucket != adaptive.Night && responseRate < 0.3 {
+		switch bucket {
+		case adaptive.Morning:
+			messages := []string{
+				"🌱 Start small - no rush",
+				"☀️ Ease in with one thing",
+			}
+
+			return messages[rand.Intn(len(messages))]
+		case adaptive.Afternoon:
+			messages := []string{
+				"👀 One small win is enough",
+				"🌱 Try one task when ready",
+			}
+
+			return messages[rand.Intn(len(messages))]
+		}
+	}
+
+	switch bucket {
+	case adaptive.Morning:
 		messages := []string{
-			"🌱 No rush - start small when ready",
-			"👀 It is okay, just begin with one thing",
+			"🌱 Start small - no rush",
+			"☀️ Ease in with one thing",
 		}
 
 		return messages[rand.Intn(len(messages))]
-	}
-
-	if responseRate > 0.7 {
+	case adaptive.Afternoon:
 		messages := []string{
-			"⚡ Let us go - pick one thing",
-			"🔥 You have got this - start now",
+			"⚡ Pick one thing",
+			"👀 Ready when you are",
 		}
 
 		return messages[rand.Intn(len(messages))]
-	}
+	case adaptive.Evening:
+		messages := []string{
+			"👀 Maybe one small thing?",
+			"🌙 A small step still counts",
+		}
 
-	messages := []string{
-		"👀 Ready when you are",
-		"⚡ Pick one thing",
-		"🌱 Start small",
+		return messages[rand.Intn(len(messages))]
+	default:
+		return ""
 	}
-
-	return messages[rand.Intn(len(messages))]
 }
 
 func pausedDecision() Decision {

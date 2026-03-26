@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"focusbar/internal/adaptive"
 	"focusbar/internal/task"
 	"focusbar/internal/tray"
 )
@@ -16,6 +17,9 @@ func TestEvaluateReturnsNoneWithoutPendingTasks(t *testing.T) {
 		LastActivity: time.Now().Add(-10 * time.Minute),
 		IdleDuration: 10 * time.Minute,
 		ResponseRate: 0.5,
+		Bucket:       adaptive.Afternoon,
+		BestHour:     false,
+		WeakHour:     false,
 	})
 
 	if decision.Type != None {
@@ -35,6 +39,9 @@ func TestEvaluateReturnsNoneWhileWorking(t *testing.T) {
 		Now:          time.Now(),
 		PausedCount:  0,
 		ResponseRate: 0.5,
+		Bucket:       adaptive.Afternoon,
+		BestHour:     false,
+		WeakHour:     false,
 	})
 
 	if decision.Type != None {
@@ -53,6 +60,9 @@ func TestEvaluateIdleEscalatesToNotification(t *testing.T) {
 		IdleDuration:     13 * time.Minute,
 		Now:              now,
 		ResponseRate:     0.8,
+		Bucket:           adaptive.Afternoon,
+		BestHour:         false,
+		WeakHour:         false,
 	})
 
 	if decision.Type != Idle {
@@ -77,6 +87,9 @@ func TestEvaluateIdleRespectsNotificationCooldown(t *testing.T) {
 		IdleDuration:     13 * time.Minute,
 		Now:              now,
 		ResponseRate:     0.8,
+		Bucket:           adaptive.Afternoon,
+		BestHour:         false,
+		WeakHour:         false,
 	})
 
 	if decision.Type != Idle {
@@ -97,6 +110,9 @@ func TestEvaluateChoosesPausedOverOverload(t *testing.T) {
 		IdleDuration: 0,
 		Now:          time.Now(),
 		ResponseRate: 0.5,
+		Bucket:       adaptive.Afternoon,
+		BestHour:     false,
+		WeakHour:     false,
 	})
 
 	if decision.Type != NudgePaused {
@@ -117,6 +133,9 @@ func TestEvaluateUsesSofterToneForLowResponseRate(t *testing.T) {
 		IdleDuration: 4 * time.Minute,
 		Now:          now,
 		ResponseRate: 0.2,
+		Bucket:       adaptive.Morning,
+		BestHour:     false,
+		WeakHour:     false,
 	})
 
 	if decision.Type != Idle {
@@ -126,8 +145,8 @@ func TestEvaluateUsesSofterToneForLowResponseRate(t *testing.T) {
 		t.Fatalf("expected notify=false")
 	}
 	valid := map[string]bool{
-		"🌱 No rush - start small when ready":      true,
-		"👀 It is okay, just begin with one thing": true,
+		"🌱 Start small - no rush":   true,
+		"☀️ Ease in with one thing": true,
 	}
 	if !valid[decision.Message] {
 		t.Fatalf("unexpected soft message %q", decision.Message)
@@ -145,9 +164,75 @@ func TestEvaluateLowResponseRateRequiresLongerIdleForNotification(t *testing.T) 
 		IdleDuration:     13 * time.Minute,
 		Now:              now,
 		ResponseRate:     0.2,
+		Bucket:           adaptive.Morning,
+		BestHour:         false,
+		WeakHour:         false,
 	})
 
 	if decision.Notify {
-		t.Fatalf("expected notify=false for low response rate before 15m idle")
+		t.Fatalf("expected notify=false for low response rate before longer morning idle")
+	}
+}
+
+func TestEvaluateReturnsNoneAtNight(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+	decision := Evaluate(Snapshot{
+		TodoCount:    2,
+		PausedCount:  1,
+		LastActivity: now.Add(-30 * time.Minute),
+		IdleDuration: 30 * time.Minute,
+		Now:          now,
+		ResponseRate: 0.8,
+		Bucket:       adaptive.Night,
+		BestHour:     false,
+		WeakHour:     false,
+	})
+
+	if decision.Type != None {
+		t.Fatalf("expected none at night, got %v", decision.Type)
+	}
+}
+
+func TestEvaluateBestHourEscalatesSooner(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+	decision := Evaluate(Snapshot{
+		TodoCount:        1,
+		LastActivity:     now.Add(-8 * time.Minute),
+		LastNotification: time.Time{},
+		IdleDuration:     8 * time.Minute,
+		Now:              now,
+		ResponseRate:     0.8,
+		Bucket:           adaptive.Afternoon,
+		BestHour:         true,
+		WeakHour:         false,
+	})
+
+	if !decision.Notify {
+		t.Fatalf("expected notify=true during best hour")
+	}
+}
+
+func TestEvaluateWeakHourBacksOff(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+	decision := Evaluate(Snapshot{
+		TodoCount:        1,
+		LastActivity:     now.Add(-16 * time.Minute),
+		LastNotification: time.Time{},
+		IdleDuration:     16 * time.Minute,
+		Now:              now,
+		ResponseRate:     0.5,
+		Bucket:           adaptive.Afternoon,
+		BestHour:         false,
+		WeakHour:         true,
+	})
+
+	if decision.Notify {
+		t.Fatalf("expected notify=false during weak hour before longer idle")
 	}
 }

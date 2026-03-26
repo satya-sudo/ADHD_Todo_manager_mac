@@ -108,8 +108,8 @@ func (a *App) RecordNotification() {
 	defer a.mu.Unlock()
 
 	if a.pendingNotice {
-		a.adaptiveStats.Record(false)
-		logx.Infof("adaptive notification missed response_rate=%.2f", a.adaptiveStats.ResponseRate())
+		a.adaptiveStats.Record(false, time.Now())
+		logx.Infof("adaptive notification missed response_rate=%.2f", a.adaptiveStats.ResponseRate(time.Now()))
 	}
 
 	a.lastNotice = time.Now()
@@ -134,16 +134,30 @@ func (a *App) RecordTaskEngagement() {
 	}
 
 	success := time.Since(a.lastNotice) <= 3*time.Minute
-	a.adaptiveStats.Record(success)
+	a.adaptiveStats.Record(success, time.Now())
 	a.pendingNotice = false
-	logx.Infof("adaptive engagement recorded success=%t response_rate=%.2f", success, a.adaptiveStats.ResponseRate())
+	logx.Infof("adaptive engagement recorded success=%t response_rate=%.2f", success, a.adaptiveStats.ResponseRate(time.Now()))
 }
 
-func (a *App) ResponseRate() float64 {
+func (a *App) ResponseRate(now time.Time) float64 {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	return a.adaptiveStats.ResponseRate()
+	return a.adaptiveStats.ResponseRate(now)
+}
+
+func (a *App) IsBestFocusHour(now time.Time) bool {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	return a.adaptiveStats.IsBestHour(now)
+}
+
+func (a *App) IsWeakFocusHour(now time.Time) bool {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	return a.adaptiveStats.IsWeakHour(now)
 }
 
 func defaultStoragePath() string {
