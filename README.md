@@ -12,6 +12,16 @@ It is designed for lightweight focus sessions:
 
 The app lives in the macOS menu bar and uses `systray` for the UI.
 
+## v0.2.0
+
+Focusbar `v0.2.0` turns the app into a more complete local-first macOS release.
+
+- SQLite-backed task storage with automatic legacy `tasks.json` migration
+- adaptive reminders that react to response rate and time of day
+- focus-window learning based on the hours you actually respond best
+- a lightweight `Done` section so completed tasks still give a small sense of progress
+- bundled macOS app, DMG packaging, GitHub Pages site, and release workflows
+
 ## Why this app
 
 This project is aimed at people who do better with:
@@ -29,10 +39,14 @@ It is not trying to be a full project manager. It is more like a tiny focus comp
 - quick add task prompt
 - one active working task at a time
 - pause, resume, complete, and delete actions
+- recent completed tasks visible in a lightweight `Done` section
 - native macOS notifications from the bundled app
 - persistent task storage in `~/Library/Application Support/Focusbar/focusbar.db`
+- automatic migration from legacy `tasks.json` storage
 - automatic cleanup for old completed tasks
 - live timer in the menu bar while working on a task
+- adaptive reminders based on response rate, time-of-day buckets, and stronger/weaker focus hours
+- focus-window tracking that learns when you naturally respond best
 - short tray-safe titles for multi-display menu bars
 
 ## Project structure
@@ -43,6 +57,7 @@ focusbar/
 │   └── app/
 │       └── main.go
 ├── internal/
+│   ├── adaptive/
 │   ├── app/
 │   ├── logx/
 │   ├── notifier/
@@ -60,6 +75,7 @@ focusbar/
 ### Package overview
 
 - `cmd/app`: application entrypoint
+- `internal/adaptive`: response tracking, time buckets, and focus-window learning
 - `internal/app`: startup wiring and app lifecycle
 - `internal/logx`: file logging for debugging app and notification flow
 - `internal/notifier`: native macOS notification bridge
@@ -180,12 +196,14 @@ tail -f ~/Library/Logs/Focusbar/focusbar.log
 ## How it works
 
 1. The app starts in the menu bar.
-2. Tasks are loaded from the app support directory.
+2. Tasks are loaded from the app support directory SQLite database.
 3. If a task was already active, the timer resumes.
 4. You can add a new task from the menu.
 5. Starting one task pauses any previously active task.
-6. Completed tasks are cleaned up automatically after they get old enough.
-7. Reminders only trigger when there are pending tasks.
+6. Completed tasks stay visible in a small `Done` section before they age out.
+7. Completed tasks are cleaned up automatically after they get old enough.
+8. Reminders only trigger when there are pending tasks.
+9. Reminder tone and pacing adapt to response history, time of day, and best focus hours.
 
 ## Data storage
 
@@ -195,12 +213,26 @@ Tasks are stored locally in:
 ~/Library/Application Support/Focusbar/focusbar.db
 ```
 
+If an older `tasks.json` file exists in the same app-support directory, Focusbar imports it automatically on first load.
+
 Each task includes:
 
 - id
 - title
 - state
 - created timestamp
+
+## Adaptive reminders
+
+Focusbar does not use a fixed reminder loop anymore.
+
+- no reminders when there are no pending tasks
+- no reminders while a task is actively working
+- softer or stronger wording depending on recent response rate
+- slower or faster nudges depending on morning, afternoon, evening, or night
+- hour-based learning to detect stronger and weaker focus windows
+
+This keeps reminders closer to “supportive” than “nagging”.
 
 ## Current task states
 

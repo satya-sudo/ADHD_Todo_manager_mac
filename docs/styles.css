@@ -325,6 +325,37 @@ pre {
   line-height: 1.7;
 }
 
+.release-banner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid rgba(29, 29, 32, 0.1);
+  border-radius: 22px;
+  background: rgba(255, 252, 244, 0.76);
+  box-shadow: 0 12px 30px rgba(107, 90, 31, 0.07);
+}
+
+.release-label {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 183, 27, 0.16);
+  color: var(--accent-deep);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.release-copy {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 .feature-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -414,6 +445,10 @@ pre {
 @media (max-width: 720px) {
   .page-shell {
     width: min(100% - 20px, 1180px);
+  }
+
+  .release-banner {
+    grid-template-columns: 1fr;
   }
 
   .topbar {
