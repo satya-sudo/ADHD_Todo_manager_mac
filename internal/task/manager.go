@@ -1,6 +1,7 @@
 package task
 
 import (
+	"database/sql"
 	"sync"
 
 	"focusbar/internal/timer"
@@ -9,18 +10,23 @@ import (
 type Manager struct {
 	tasks        []Task
 	activeTaskID string
-	storagePath  string
+	dbPath       string
+	legacyPath   string
+	db           *sql.DB
 	timer        timer.Timer
 	setTitle     func(string)
 	touch        func()
+	onFocus      func()
 	mu           sync.RWMutex
 }
 
-func NewManager(storagePath string, setTitle func(string), touch func()) *Manager {
+func NewManager(dbPath string, legacyPath string, setTitle func(string), touch func(), onFocus func()) *Manager {
 	return &Manager{
-		storagePath: storagePath,
-		setTitle:    setTitle,
-		touch:       touch,
+		dbPath:     dbPath,
+		legacyPath: legacyPath,
+		setTitle:   setTitle,
+		touch:      touch,
+		onFocus:    onFocus,
 	}
 }
 
@@ -41,8 +47,6 @@ func (m *Manager) StartTask(id string) {
 	m.timer.Stop()
 
 	m.mu.Lock()
-	defer m.mu.Unlock()
-
 	var title string
 	for i := range m.tasks {
 		switch {
@@ -56,11 +60,17 @@ func (m *Manager) StartTask(id string) {
 	}
 
 	if title != "" {
-		m.timer.Start(title, m.setTitle)
+		m.saveLocked()
+	}
+	m.mu.Unlock()
+
+	if title == "" {
+		return
 	}
 
+	m.timer.Start(title, m.setTitle)
 	m.recordActivity()
-	m.saveLocked()
+	m.recordFocus()
 }
 
 func (m *Manager) PauseTask(id string) {
@@ -206,4 +216,23 @@ func (m *Manager) recordActivity() {
 	if m.touch != nil {
 		m.touch()
 	}
+}
+
+func (m *Manager) recordFocus() {
+	if m.onFocus != nil {
+		m.onFocus()
+	}
+}
+
+func (m *Manager) Close() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.db == nil {
+		return nil
+	}
+
+	err := m.db.Close()
+	m.db = nil
+	return err
 }

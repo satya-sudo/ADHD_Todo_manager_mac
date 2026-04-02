@@ -5,6 +5,7 @@
 tasks.json
 
 # Build output
+app
 dist/
 native/bin/
 

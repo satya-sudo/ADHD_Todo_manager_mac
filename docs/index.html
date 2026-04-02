@@ -54,7 +54,7 @@
           <ul class="hero-notes">
             <li>Built for macOS menu bar workflows</li>
             <li>Designed around low-friction focus</li>
-            <li>Native notifications, local storage, no cloud required</li>
+            <li>Native notifications, SQLite storage, no cloud required</li>
           </ul>
         </div>
 
@@ -92,6 +92,13 @@
           <p class="eyebrow">Why it feels lighter</p>
           <h2>Built for momentum, not overhead.</h2>
         </div>
+        <div class="release-banner">
+          <p class="release-label">v0.2.0</p>
+          <p class="release-copy">
+            This release adds SQLite-backed persistence, adaptive reminders, focus-window learning, a visible Done
+            section, and cleaner macOS packaging for zip, DMG, and GitHub release builds.
+          </p>
+        </div>
         <div class="feature-grid">
           <article class="feature-card">
             <h3>Quick capture</h3>
@@ -106,12 +113,20 @@
             <p>Reminders stay quiet while you are focused and only nudge when there is something pending to come back to.</p>
           </article>
           <article class="feature-card">
+            <h3>Adaptive nudges</h3>
+            <p>Reminder timing and tone now adapt to your response rate, time of day, and stronger or weaker focus hours.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Visible progress</h3>
+            <p>Recently completed tasks stay visible in a lightweight Done section so finishing work still feels rewarding.</p>
+          </article>
+          <article class="feature-card">
             <h3>Tray-safe UI</h3>
             <p>Task names and reminder labels are trimmed specifically for the menu bar, so they stay stable across displays.</p>
           </article>
           <article class="feature-card">
             <h3>Local-first</h3>
-            <p>Your tasks stay on your Mac in Application Support. No account, sync, or online dependency required.</p>
+            <p>Your tasks stay on your Mac in Application Support with SQLite-backed storage and legacy JSON migration.</p>
           </article>
           <article class="feature-card">
             <h3>Native packaging</h3>
@@ -181,6 +196,11 @@
             <span class="ops-step">3</span>
             <h3>Release artifacts</h3>
             <p>GitHub Actions can run tests, build the app, and publish zip and DMG artifacts for tagged releases.</p>
+          </div>
+          <div class="ops-card">
+            <span class="ops-step">4</span>
+            <h3>Adaptive core</h3>
+            <p>The reminder engine now learns from response rate and focus windows instead of using one fixed notification rhythm.</p>
           </div>
         </div>
       </section>
