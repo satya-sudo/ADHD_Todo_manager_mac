@@ -195,3 +195,13 @@ func jsonPathToDBPath(path string) string {
 
 	return path + ".db"
 }
+
+func defaultDataDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		logx.Errorf("user home lookup failed err=%v", err)
+		return "."
+	}
+
+	return filepath.Join(home, "Library", "Application Support", "Focusbar")
+}
