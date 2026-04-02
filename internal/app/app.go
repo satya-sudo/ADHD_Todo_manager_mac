@@ -179,13 +179,11 @@ func defaultStoragePaths() (string, string) {
 		return jsonPathToDBPath(path), path
 	}
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		logx.Errorf("user home lookup failed err=%v", err)
+	baseDir := defaultDataDir()
+	if baseDir == "." {
 		return "focusbar.db", "tasks.json"
 	}
 
-	baseDir := filepath.Join(home, "Library", "Application Support", "Focusbar")
 	return filepath.Join(baseDir, "focusbar.db"), filepath.Join(baseDir, "tasks.json")
 }
 
