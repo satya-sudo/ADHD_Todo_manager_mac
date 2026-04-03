@@ -141,6 +141,12 @@ Create a drag-and-drop DMG installer:
 ./scripts/package-dmg.sh
 ```
 
+NOTE:
+
+- the DMG is currently not notarized
+- macOS may warn that Focusbar cannot be verified because Apple Developer signing is still pending
+- the zip build is the safer download for now
+
 ## Website
 
 A GitHub Pages landing page lives in:
