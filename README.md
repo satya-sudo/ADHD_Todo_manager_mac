@@ -247,14 +247,39 @@ This keeps reminders closer to “supportive” than “nagging”.
 - `paused`
 - `done`
 
-## Future ideas
+## Future ideas and milestones
 
-- recurring reminders
-- better daily review flow
-- lightweight task history
-- SQLite-backed history and sessions
-- configurable cleanup windows
+### v0.2.2
+
+- reminder settings and cleanup settings
+- `Test Notification`, `Open Logs`, and `Reveal Data Folder`
+- `Done today` feedback in the menu
+- clearer first-run and install guidance
+
+### v0.3.0
+
+- persisted focus sessions in SQLite
+- daily stats like focus time and completed tasks
+- settings persistence
+- launch at login
 - keyboard shortcuts
+- backup export and import
+
+### v0.4.0
+
+- better first-launch onboarding
+- warmer progress feedback and reward loops
+- archive or history view
+- task notes or tiny context fields
+- more polished menu structure
+
+### v1.0
+
+- Apple Developer signing and notarization
+- public-ready DMG and zip distribution
+- stable database migrations
+- stronger docs, screenshots, and release polish
+- final UX sweep across reminders, onboarding, and task flow
 
 ## License
 
